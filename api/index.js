@@ -1,6 +1,10 @@
 export const config = { runtime: "edge" };
 
-const TARGET_BASE = (process.env.TARGET_DOMAIN || "").replace(/\/$/, "");
+const rawBase = process.env.TARGET_DOMAIN || "";
+
+const TARGET_BASE = rawBase.endsWith("/")
+  ? rawBase.slice(0, -1)
+  : rawBase;
 
 
 const ALLOWED_HOST = "ver.fazzatravel.com";
@@ -27,19 +31,22 @@ export default async function handler(req) {
   }
 
   try {
-    /
+    
     const baseUrl = new URL(TARGET_BASE);
+    const host = baseUrl.hostname;
 
     if (
-      baseUrl.hostname !== ALLOWED_HOST &&
-      !baseUrl.hostname.endsWith("." + ALLOWED_HOST)
+      host !== ALLOWED_HOST &&
+      !host.endsWith("." + ALLOWED_HOST)
     ) {
       return new Response("Forbidden target host", { status: 403 });
     }
 
     const pathStart = req.url.indexOf("/", 8);
     const targetUrl =
-      pathStart === -1 ? TARGET_BASE + "/" : TARGET_BASE + req.url.slice(pathStart);
+      pathStart === -1
+        ? TARGET_BASE + "/"
+        : TARGET_BASE + req.url.slice(pathStart);
 
     const out = new Headers();
     let clientIp = null;
@@ -58,7 +65,6 @@ export default async function handler(req) {
         continue;
       }
 
-  
       if (k === "host") continue;
 
       out.set(k, v);
